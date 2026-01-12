@@ -690,6 +690,7 @@ function render(){
   }
   $("lobbyHint").textContent =
   (playersCount < 2) ? "Waiting for 2nd player…" : "Both players joined ✅";
+   console.log("playersCount =", playersCount, "stage =", roomState.stage);
 
 
   // Stage routing
@@ -887,9 +888,17 @@ $("joinGo").onclick = () => createOrJoin({
 });
 
 $("goGameBtn").onclick = async () => {
-  // Start game for BOTH players (writes to DB)
-  await db.ref(`rooms/${my.room}/stage`).set("game");
+  try {
+    console.log("Go to Game clicked. Room =", my.room);
+    await db.ref(`rooms/${my.room}`).update({ stage: "game" });
+    // optional: local switch immediately (UI)
+    goto("step-game");
+  } catch (e) {
+    console.error("Failed to start game:", e);
+    alert("Unable to start game. Check Firebase rules (PERMISSION_DENIED) in console.");
+  }
 };
+
 
 
 /* Winner modal next / Another game */
