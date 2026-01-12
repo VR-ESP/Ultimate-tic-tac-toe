@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ultimate Tic-Tac-Toe (2 Player Room)</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --ink:#0f172a;
+    --muted:#64748b;
+    --card:rgba(255,255,255,.92);
+    --panel:rgba(248,250,252,.92);
+    --line:#e2e8f0;
+    --line2:#cbd5e1;
+    --shadow:0 14px 40px rgba(2,6,23,.10);
+
+    --btnGrad: linear-gradient(90deg,#2563eb,#7c3aed);
+    --btnText:#ffffff;
+
+    --x:#ef4444;
+    --o:#3b82f6;
+
+    --boardGap:10px;
+    --cellGap:6px;
+  }
+  [data-mode="dark"]{
+    --bg:#0b1220;
+    --ink:#e5e7eb;
+    --muted:#94a3b8;
+    --card:rgba(15,23,42,.90);
+    --panel:rgba(11,19,39,.90);
+    --line:#22314a;
+    --line2:#334155;
+    --shadow:0 20px 52px rgba(0,0,0,.45);
+    --btnText:#07101f;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 700px at 15% -10%, rgba(99,102,241,.16), transparent 60%),
+      radial-gradient(900px 600px at 85% 10%, rgba(16,185,129,.12), transparent 55%),
+      radial-gradient(900px 700px at 50% 110%, rgba(236,72,153,.10), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font:16px/1.45 system-ui,Segoe UI,Roboto,Arial,sans-serif;
+  }
+  .wrap{max-width:1120px;margin:18px auto;padding:16px}
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:18px;
+    box-shadow:var(--shadow);
+    backdrop-filter: blur(8px);
+  }
+  h1{
+    margin:8px 0 10px;
+    font-weight:950;
+    text-align:center;
+    font-size:32px;
+    background:var(--btnGrad);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .pill{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line2);border-radius:999px;padding:6px 12px;background:transparent}
+  .mini{font-size:12px;color:var(--muted)}
+  .btnRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  button{border:0;background:transparent;cursor:pointer;font-weight:900;color:var(--ink)}
+  button:disabled{opacity:.55;cursor:not-allowed}
+
+  .round{
+    width:36px;height:36px;border-radius:999px;
+    background:var(--panel);
+    display:inline-flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 18px rgba(2,6,23,.08);
+  }
+
+  .modeBtn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:9px 12px;border-radius:999px;
+    background:var(--btnGrad);
+    color:var(--btnText);
+    box-shadow:0 12px 28px rgba(2,6,23,.14);
+    font-weight:950;
+  }
+  .primaryBtn{
+    border-radius:14px;
+    padding:10px 14px;
+    background:var(--btnGrad);
+    color:var(--btnText);
+    font-weight:950;
+    box-shadow:0 12px 28px rgba(2,6,23,.14);
+  }
+  .softBtn{
+    border:1px solid var(--line2);
+    background:var(--panel);
+    border-radius:14px;
+    padding:10px 14px;
+    font-weight:950;
+  }
+  input[type=text]{
+    width:100%;
+    border:1px solid var(--line2);
+    border-radius:14px;
+    padding:10px 12px;
+    background:var(--panel);
+    color:var(--ink);
+    outline:none;
+    backdrop-filter: blur(6px);
+  }
+  .hr{height:1px;background:var(--line);margin:14px 0;border-radius:1px}
+  .center{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap}
+  .hidden{display:none !important}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:900px){ .row2{grid-template-columns:1fr} }
+
+  /* Panels / Lobby */
+  .panelBox{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:12px;
+    backdrop-filter: blur(8px);
+  }
+  .title{font-weight:950;margin:2px 0 6px}
+  .playerLine{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:10px 12px;
+    margin-top:8px;
+    background:transparent;
+  }
+  .pLeft{display:flex;align-items:center;gap:10px;min-width:0}
+  .dot{width:12px;height:12px;border-radius:50%}
+  .pName{font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .markTag{font-size:12px;font-weight:1000;padding:4px 10px;border-radius:999px;border:1px solid var(--line2)}
+  .markX{color:var(--x)}
+  .markO{color:var(--o)}
+
+  /* Game board layout */
+  .gameWrap{display:grid;grid-template-columns:1.3fr .7fr;gap:14px;align-items:start}
+  @media(max-width:980px){ .gameWrap{grid-template-columns:1fr} }
+
+  .uttt{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:var(--boardGap);
+    padding:12px;
+    border-radius:18px;
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+  }
+  .sub{
+    border-radius:16px;
+    border:1px solid var(--line2);
+    padding:10px;
+    position:relative;
+    overflow:hidden;
+    min-height:160px;
+    background:rgba(255,255,255,.08);
+  }
+  [data-mode="dark"] .sub{ background:rgba(255,255,255,.04); }
+
+  /* 9 subtle colors (each big box different) */
+  .sub[data-b="0"]{background:linear-gradient(135deg, rgba(239,68,68,.14), rgba(255,255,255,0));}
+  .sub[data-b="1"]{background:linear-gradient(135deg, rgba(59,130,246,.14), rgba(255,255,255,0));}
+  .sub[data-b="2"]{background:linear-gradient(135deg, rgba(16,185,129,.14), rgba(255,255,255,0));}
+  .sub[data-b="3"]{background:linear-gradient(135deg, rgba(245,158,11,.14), rgba(255,255,255,0));}
+  .sub[data-b="4"]{background:linear-gradient(135deg, rgba(168,85,247,.14), rgba(255,255,255,0));}
+  .sub[data-b="5"]{background:linear-gradient(135deg, rgba(34,211,238,.14), rgba(255,255,255,0));}
+  .sub[data-b="6"]{background:linear-gradient(135deg, rgba(244,114,182,.14), rgba(255,255,255,0));}
+  .sub[data-b="7"]{background:linear-gradient(135deg, rgba(132,204,22,.14), rgba(255,255,255,0));}
+  .sub[data-b="8"]{background:linear-gradient(135deg, rgba(148,163,184,.14), rgba(255,255,255,0));}
+
+  .sub.active{
+    outline:3px solid rgba(37,99,235,.60);
+    box-shadow:0 0 0 6px rgba(37,99,235,.12);
+  }
+  .sub.blocked{opacity:.40;filter:saturate(.85);}
+
+  .subWinner{
+    position:absolute; inset:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:64px;font-weight:1000;
+    background:rgba(0,0,0,.08);
+    color:var(--ink);
+    pointer-events:none;
+  }
+  [data-mode="dark"] .subWinner{background:rgba(255,255,255,.06);}
+  .subWinner.x{color:var(--x)}
+  .subWinner.o{color:var(--o)}
+  .subWinner.d{font-size:22px;font-weight:950;color:var(--muted)}
+
+  .cells{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:var(--cellGap);
+  }
+  .cell{
+    aspect-ratio: 1 / 1;
+    border-radius:14px;
+    border:1px solid var(--line2);
+    background:rgba(255,255,255,.10);
+    display:flex;align-items:center;justify-content:center;
+    font-size:30px;font-weight:1000;
+    user-select:none;
+    transition: transform .06s ease, filter .12s ease;
+  }
+  [data-mode="dark"] .cell{background:rgba(255,255,255,.04);}
+  .cell:hover{filter:brightness(1.05)}
+  .cell:active{transform:translateY(1px)}
+  .cell.x{color:var(--x)}
+  .cell.o{color:var(--o)}
+  .cell.disabled{pointer-events:none;opacity:.55}
+
+  /* Sidebar */
+  .sideRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+  .badge{
+    display:inline-flex;align-items:center;gap:8px;
+    border:1px solid var(--line2);
+    border-radius:999px;
+    padding:6px 12px;
+    background:transparent;
+  }
+  .undoPill{
+    display:flex;gap:10px;align-items:center;justify-content:space-between;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:10px 12px;
+    background:transparent;
+    margin-top:10px;
+  }
+  .undoCount{font-weight:1000}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px}
+
+  /* Modals */
+  .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px}
+  .modalBack.show{display:flex}
+  .modal{
+    max-width:860px;width:100%;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:16px;
+    box-shadow:var(--shadow);
+    backdrop-filter: blur(10px);
+  }
+  .modal h2{margin:0 0 10px;font-size:22px}
+  .rulesGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:900px){ .rulesGrid{grid-template-columns:1fr} }
+  .rulesBox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px}
+  .winnerName{font-size:28px;font-weight:1000;background:var(--btnGrad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* Confetti */
+  .confetti{position:fixed; inset:0; pointer-events:none; z-index:9998; overflow:hidden;}
+  .confetti i{position:absolute; top:-20px; width:10px; height:14px; border-radius:3px; opacity:.95; animation:confFall linear forwards;}
+  @keyframes confFall{to{transform: translateY(110vh) rotate(720deg); opacity: 1;}}
+</style>
+</head>
+<body>
+<div class="confetti" id="confetti"></div>
+
+<!-- Rules Modal -->
+<div class="modalBack" id="rulesBack">
+  <div class="modal">
+    <h2>How to Play — Ultimate Tic-Tac-Toe</h2>
+    <div class="mini" style="margin-bottom:10px">Win 3 small boards in a row to win the big board.</div>
+
+    <div class="rulesGrid">
+      <div class="rulesBox">
+        <div class="title">Rule 1 — Where you can play</div>
+        <div class="mini">Your move sends your opponent to the next small board.</div>
+        <ul style="margin:8px 0 0 18px">
+          <li>Play in any cell of the <b>highlighted</b> small board.</li>
+          <li>The cell index you pick decides the opponent’s next board.</li>
+          <li>If the target board is already won/drawn, opponent can play in any available board.</li>
+        </ul>
+      </div>
+
+      <div class="rulesBox">
+        <div class="title">Rule 2 — Win conditions</div>
+        <ul style="margin:8px 0 0 18px">
+          <li>Win a small board like normal tic-tac-toe.</li>
+          <li>Win the big game by winning 3 small boards in a row.</li>
+        </ul>
+      </div>
+
+      <div class="rulesBox">
+        <div class="title">Visual</div>
+        <div class="mini" style="margin-bottom:8px">Highlighted board = where you can play.</div>
+        <svg viewBox="0 0 240 140" width="100%" height="140" aria-label="rules visual">
+          <rect x="6" y="6" width="228" height="128" rx="14" fill="rgba(37,99,235,.10)" stroke="rgba(37,99,235,.65)" stroke-width="3"/>
+          <g stroke="rgba(15,23,42,.35)" stroke-width="2">
+            <path d="M82 14 V132"/><path d="M158 14 V132"/>
+            <path d="M14 50 H226"/><path d="M14 96 H226"/>
+          </g>
+          <rect x="14" y="14" width="68" height="36" rx="10" fill="rgba(239,68,68,.10)"/>
+          <text x="48" y="38" text-anchor="middle" font-size="18" font-weight="900" fill="rgba(239,68,68,.85)">X</text>
+          <text x="120" y="82" text-anchor="middle" font-size="12" font-weight="800" fill="rgba(15,23,42,.55)">Allowed</text>
+        </svg>
+      </div>
+
+      <div class="rulesBox">
+        <div class="title">Undo</div>
+        <div class="mini">Each player has <b>3 undo</b> for the entire game. Undo reverts the last move and consumes 1 undo from the player who presses it.</div>
+      </div>
+    </div>
+
+    <div class="center" style="justify-content:flex-end;margin-top:12px">
+      <button id="closeRules" class="primaryBtn">Got it</button>
+    </div>
+  </div>
+</div>
+
+<!-- Winner Modal -->
+<div class="modalBack" id="winnerBack">
+  <div class="modal">
+    <h2>🏆 Winner</h2>
+    <div class="winnerName" id="winnerName">-</div>
+    <div class="mini" style="margin-top:6px">Click “Another game” to go back to lobby.</div>
+    <div class="center" style="justify-content:flex-end;margin-top:12px">
+      <button id="winnerNext" class="primaryBtn">🔁 Another game</button>
+      <button id="winnerClose" class="softBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="topbar">
+      <div class="pill">
+        <span class="mini">Room</span>
+        <b id="roomTop">-</b>
+        <button id="copyRoom" class="softBtn" style="padding:7px 10px;border-radius:999px;display:none">📋 Copy</button>
+      </div>
+      <div class="btnRow">
+        <button id="rulesBtn" class="round" title="Rules"><b>i</b></button>
+        <button id="modeBtn" class="modeBtn" title="Dark/Light">🌙 Dark</button>
+      </div>
+    </div>
+
+    <h1>Ultimate Tic-Tac-Toe</h1>
+
+    <!-- Choose -->
+    <div id="step-choose" class="center" style="margin:8px 0 6px">
+      <button id="btnCreate" class="primaryBtn">Create Room</button>
+      <button id="btnJoin" class="softBtn">Join Room</button>
+    </div>
+
+    <!-- Create -->
+    <div id="step-create" class="hidden">
+      <div class="row2">
+        <div>
+          <div class="title">Your Name</div>
+          <input id="createName" type="text" placeholder="e.g., Player 1"/>
+        </div>
+        <div>
+          <div class="title">Room Code</div>
+          <input id="createCode" type="text" readonly/>
+        </div>
+      </div>
+      <div class="center" style="margin-top:10px">
+        <button id="createGo" class="primaryBtn">Create & Enter Lobby</button>
+        <button id="back1" class="softBtn">Back</button>
+      </div>
+    </div>
+
+    <!-- Join -->
+    <div id="step-join" class="hidden">
+      <div class="row2">
+        <div>
+          <div class="title">Your Name</div>
+          <input id="joinName" type="text" placeholder="e.g., Player 2"/>
+        </div>
+        <div>
+          <div class="title">Room Code</div>
+          <input id="joinCode" type="text" placeholder="ABCDE"/>
+        </div>
+      </div>
+      <div class="center" style="margin-top:10px">
+        <button id="joinGo" class="primaryBtn">Join Lobby</button>
+        <button id="back2" class="softBtn">Back</button>
+      </div>
+    </div>
+
+    <!-- Lobby -->
+    <div id="step-lobby" class="hidden">
+      <div class="row2">
+        <div class="panelBox">
+          <div class="title">Lobby</div>
+          <div class="mini">Waiting for 2nd player…</div>
+          <div id="playersList"></div>
+        </div>
+
+        <div class="panelBox">
+          <div class="title">Status</div>
+          <div id="lobbyStatus" class="mini">-</div>
+          <div class="hr"></div>
+          <div class="center" style="justify-content:flex-start">
+            <button id="goGameBtn" class="primaryBtn hidden">Go to Game</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game -->
+    <div id="step-game" class="hidden">
+      <div class="gameWrap">
+        <div class="panelBox">
+          <div class="sideRow">
+            <div class="badge">
+              <span class="mini">You</span>&nbsp;<span id="youDot" class="dot"></span>&nbsp;<b id="youName">-</b>
+              <span id="youMark" class="markTag">?</span>
+            </div>
+            <div class="badge">
+              <span class="mini">Turn</span>&nbsp;<b id="turnName">-</b>&nbsp;<span id="turnMark" class="markTag">?</span>
+            </div>
+          </div>
+
+          <div class="hint" id="whereHint">-</div>
+
+          <div class="hr"></div>
+
+          <div id="board" class="uttt" aria-label="ultimate tic tac toe board"></div>
+        </div>
+
+        <div class="panelBox">
+          <div class="title">Controls</div>
+          <div class="undoPill">
+            <div>
+              <div class="mini">Undo remaining</div>
+              <div class="undoCount" id="undoCount">3</div>
+            </div>
+            <button id="undoBtn" class="primaryBtn">↩ Undo</button>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="title">Opponent</div>
+          <div class="mini" id="oppLine">-</div>
+
+          <div class="hr"></div>
+
+          <button id="anotherGame" class="primaryBtn hidden">🔁 Another game</button>
+          <div class="hint">Undo consumes 1 from the player who clicks it. (3 total per player)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Firebase compat (single-file) -->
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
+<script>
+/* ==========================
+   Firebase Config (REPLACE)
+   ========================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyC98szpM5aTx6VxM7n3ANpX39_37R_FXD8",
+  authDomain: "ultimate-tic-tac-toe-e88fc.firebaseapp.com",
+  databaseURL: "https://ultimate-tic-tac-toe-e88fc-default-rtdb.firebaseio.com",
+  projectId: "ultimate-tic-tac-toe-e88fc",
+  storageBucket: "ultimate-tic-tac-toe-e88fc.firebasestorage.app",
+  messagingSenderId: "747505183350",
+  appId: "1:747505183350:web:4c4b23f448e93667940d57"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ==========================
+   Dark/Light mode (dark default)
+   ========================== */
+function setMode(mode){
+  mode = (mode === "dark") ? "dark" : "light";
+  document.documentElement.setAttribute("data-mode", mode);
+  localStorage.setItem("uttt_mode", mode);
+  document.getElementById("modeBtn").textContent = (mode === "dark") ? "☀️ Light" : "🌙 Dark";
+}
+(function initMode(){
+  const saved = localStorage.getItem("uttt_mode");
+  if(saved === "dark" || saved === "light") setMode(saved);
+  else setMode("dark");
+})();
+document.getElementById("modeBtn").onclick = () => {
+  const cur = document.documentElement.getAttribute("data-mode") || "light";
+  setMode(cur === "dark" ? "light" : "dark");
+};
+
+/* ==========================
+   Helpers
+   ========================== */
+const $ = (id) => document.getElementById(id);
+const now = () => Date.now();
+
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function roomCode(){ return Math.random().toString(36).substring(2,7).toUpperCase(); }
+function pastel(i){
+  const arr = ["#ef4444","#3b82f6","#10b981","#f59e0b","#a855f7","#22d3ee"];
+  return arr[i % arr.length];
+}
+
+/* ==========================
+   Modals
+   ========================== */
+$("rulesBtn").onclick = () => $("rulesBack").classList.add("show");
+$("closeRules").onclick = () => $("rulesBack").classList.remove("show");
+$("rulesBack").onclick = (e) => { if(e.target.id==="rulesBack") $("rulesBack").classList.remove("show"); };
+
+$("winnerClose").onclick = () => $("winnerBack").classList.remove("show");
+$("winnerBack").onclick = (e) => { if(e.target.id==="winnerBack") $("winnerBack").classList.remove("show"); };
+
+/* Confetti */
+function launchConfetti(){
+  const c=$("confetti"); c.innerHTML="";
+  const colors=["#ef4444","#f59e0b","#10b981","#3b82f6","#a855f7","#22d3ee","#f472b6","#84cc16"];
+  const pieces = 220;
+  for(let i=0;i<pieces;i++){
+    const p=document.createElement("i");
+    const w = 6 + Math.random()*8;
+    const h = 8 + Math.random()*12;
+    p.style.width = w+"px";
+    p.style.height = h+"px";
+    p.style.left = (Math.random()*100) + "vw";
+    p.style.background = colors[i % colors.length];
+    p.style.opacity = (0.7 + Math.random()*0.3).toFixed(2);
+    p.style.borderRadius = (Math.random() < 0.3) ? "999px" : "3px";
+    p.style.animationDuration = (1.7 + Math.random()*2.0) + "s";
+    p.style.animationDelay = (Math.random()*0.15) + "s";
+    c.appendChild(p);
+  }
+  setTimeout(()=>{ c.innerHTML=""; }, 3800);
+}
+
+/* ==========================
+   Navigation
+   ========================== */
+function goto(step){
+  ["step-choose","step-create","step-join","step-lobby","step-game"].forEach(s => $(s).classList.add("hidden"));
+  $(step).classList.remove("hidden");
+  $("copyRoom").style.display = (step === "step-lobby") ? "inline-flex" : "none";
+}
+$("btnCreate").onclick = () => { goto("step-create"); $("createCode").value = roomCode(); };
+$("btnJoin").onclick   = () => goto("step-join");
+$("back1").onclick     = () => goto("step-choose");
+$("back2").onclick     = () => goto("step-choose");
+goto("step-choose");
+
+/* Copy room (lobby only) */
+$("copyRoom").onclick = async () => {
+  const r = $("roomTop").textContent || "";
+  if(!r || r === "-") return;
+  try{
+    await navigator.clipboard.writeText(r);
+    $("copyRoom").textContent = "✅";
+    setTimeout(()=> $("copyRoom").textContent = "📋 Copy", 900);
+  }catch(e){
+    alert("Copy failed. Please copy manually.");
+  }
+};
+
+/* ==========================
+   Game logic
+   ========================== */
+function emptyBoard(){
+  const b=[];
+  for(let i=0;i<9;i++) b.push(Array(9).fill(""));
+  return b;
+}
+function computeWinner3(cells){
+  const lines = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+  for(const [a,b,c] of lines){
+    if(cells[a] && cells[a]===cells[b] && cells[a]===cells[c]) return cells[a];
+  }
+  if(cells.every(x => x)) return "D";
+  return "";
+}
+function computeBigWinner(subW){
+  const lines = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+  for(const [a,b,c] of lines){
+    if(subW[a] && subW[a] !== "D" && subW[a]===subW[b] && subW[a]===subW[c]) return subW[a];
+  }
+  if(subW.every(x => x && x !== "")) return "D";
+  return "";
+}
+function allowedBoards(activeBoard, subW){
+  if(activeBoard === -1) return subW.map((w,i)=> w==="" ? i : null).filter(x=>x!==null);
+  if(subW[activeBoard] !== "") return subW.map((w,i)=> w==="" ? i : null).filter(x=>x!==null);
+  return [activeBoard];
+}
+
+/* ==========================
+   Room + realtime state
+   ========================== */
+let my = { pid:null, name:"", room:"" };
+let roomState = null;
+let unsubs = [];
+
+function detach(){
+  unsubs.forEach(fn => fn && fn());
+  unsubs = [];
+}
+function onValue(path, cb){
+  const ref = db.ref(path);
+  ref.on("value", cb);
+  unsubs.push(()=>ref.off("value", cb));
+}
+
+function renderPlayersList(){
+  const host = $("playersList");
+  host.innerHTML = "";
+  const order = roomState.order || [];
+  const players = roomState.players || {};
+
+  order.forEach((pid) => {
+    const p = players[pid] || {};
+    const line = document.createElement("div");
+    line.className = "playerLine";
+    const mark = p.mark || "?";
+
+    line.innerHTML = `
+      <div class="pLeft">
+        <span class="dot" style="background:${p.color || "#999"}"></span>
+        <div style="min-width:0">
+          <div class="pName">${escapeHtml(p.name || "Player")}</div>
+          <div class="mini">${pid === my.pid ? "You" : "Opponent"}</div>
+        </div>
+      </div>
+      <span class="markTag ${mark==="X" ? "markX":"markO"}">${mark}</span>
+    `;
+    host.appendChild(line);
+  });
+
+  if(order.length < 2){
+    const wait = document.createElement("div");
+    wait.className = "mini";
+    wait.style.marginTop = "10px";
+    wait.textContent = "Waiting for second player to join…";
+    host.appendChild(wait);
+  }
+}
+
+function render(){
+  if(!roomState) return;
+
+  $("roomTop").textContent = my.room;
+
+  const order = roomState.order || [];
+  const players = roomState.players || {};
+  const me = players[my.pid] || {};
+  const oppPid = order.find(p => p !== my.pid) || null;
+  const opp = oppPid ? players[oppPid] : null;
+
+  // Lobby list
+  renderPlayersList();
+
+  // Lobby status
+  const playersCount = order.length;
+  if(playersCount < 2){
+    $("lobbyStatus").textContent = "Waiting for second player to join…";
+    $("goGameBtn").classList.add("hidden");
+  } else {
+    $("lobbyStatus").textContent = "Both players joined. Game started.";
+    $("goGameBtn").classList.remove("hidden");
+  }
+
+  // Stage routing
+  if(roomState.stage === "game") goto("step-game");
+  else goto("step-lobby");
+
+  // Game UI bits
+  $("youName").textContent = me.name || my.name || "You";
+  $("youDot").style.background = me.color || "#999";
+  $("youMark").textContent = me.mark || "?";
+  $("youMark").className = "markTag " + ((me.mark==="X") ? "markX" : "markO");
+
+  $("oppLine").innerHTML = opp
+    ? `<b>${escapeHtml(opp.name)}</b> (${opp.mark})`
+    : `<span class="mini">Waiting for opponent…</span>`;
+
+  const turnPid = roomState.turnPid;
+  const turnP = turnPid ? players[turnPid] : null;
+  $("turnName").textContent = turnP ? turnP.name : "-";
+  $("turnMark").textContent = turnP ? turnP.mark : "?";
+  $("turnMark").className = "markTag " + ((turnP?.mark==="X") ? "markX" : "markO");
+
+  const undos = roomState.undos || {};
+  $("undoCount").textContent = (undos[my.pid] ?? 3);
+
+  // Hint about allowed board
+  const gameWinner = roomState.gameWinner || "";
+  if(roomState.stage === "game"){
+    const active = roomState.activeBoard ?? -1;
+    const allowed = allowedBoards(active, roomState.subWinners || Array(9).fill(""));
+    if(gameWinner){
+      $("whereHint").innerHTML = `<span class="mini">Game ended.</span>`;
+    } else {
+      $("whereHint").innerHTML = (allowed.length===1)
+        ? `<span class="mini">Play inside the <b>highlighted</b> small board.</span>`
+        : `<span class="mini">Target board is closed — you can play in <b>any available</b> board.</span>`;
+    }
+  }
+
+  // Build board once
+  const host = $("board");
+  if(!host.dataset.built){
+    host.innerHTML = "";
+    for(let b=0;b<9;b++){
+      const sub = document.createElement("div");
+      sub.className = "sub";
+      sub.dataset.b = String(b);
+
+      const cells = document.createElement("div");
+      cells.className = "cells";
+
+      for(let c=0;c<9;c++){
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.dataset.b = String(b);
+        cell.dataset.c = String(c);
+        cell.addEventListener("click", () => tryMove(b,c));
+        cells.appendChild(cell);
+      }
+
+      const overlay = document.createElement("div");
+      overlay.className = "subWinner hidden";
+      overlay.dataset.b = String(b);
+
+      sub.appendChild(cells);
+      sub.appendChild(overlay);
+      host.appendChild(sub);
+    }
+    host.dataset.built = "1";
+  }
+
+  // Update board visuals
+  const boards = roomState.boards || emptyBoard();
+  const subW = roomState.subWinners || Array(9).fill("");
+  const active = roomState.activeBoard ?? -1;
+  const allowed = allowedBoards(active, subW);
+
+  const myTurn = (roomState.turnPid === my.pid) && !gameWinner;
+  $("undoBtn").disabled =
+    !myTurn ||
+    (roomState.history || []).length === 0 ||
+    ((roomState.undos?.[my.pid] ?? 3) <= 0);
+
+  document.querySelectorAll(".sub").forEach(el => {
+    const bi = parseInt(el.dataset.b,10);
+    const isAllowed = allowed.includes(bi) && subW[bi]==="";
+    el.classList.toggle("active", isAllowed && (allowed.length===1));
+    el.classList.toggle("blocked", (!isAllowed) || subW[bi] !== "");
+  });
+
+  document.querySelectorAll(".cell").forEach(cell => {
+    const b = parseInt(cell.dataset.b,10);
+    const c = parseInt(cell.dataset.c,10);
+    const val = boards[b][c] || "";
+    cell.textContent = val || "";
+    cell.classList.toggle("x", val==="X");
+    cell.classList.toggle("o", val==="O");
+
+    const clickable =
+      myTurn &&
+      (subW[b]==="") &&
+      allowed.includes(b) &&
+      (val==="");
+    cell.classList.toggle("disabled", !clickable);
+  });
+
+  document.querySelectorAll(".subWinner").forEach(ov => {
+    const b = parseInt(ov.dataset.b,10);
+    const w = subW[b] || "";
+    if(!w){ ov.classList.add("hidden"); return; }
+    ov.classList.remove("hidden","x","o","d");
+    if(w==="X"){ ov.textContent="X"; ov.classList.add("x"); }
+    else if(w==="O"){ ov.textContent="O"; ov.classList.add("o"); }
+    else { ov.textContent="Draw"; ov.classList.add("d"); }
+  });
+
+  // Winner popup
+  if(gameWinner && !render._shownWinner){
+    render._shownWinner = true;
+    const name = (gameWinner==="D")
+      ? "Draw"
+      : (Object.values(players).find(p=>p.mark===gameWinner)?.name || gameWinner);
+    $("winnerName").textContent = (gameWinner==="D") ? "It’s a draw!" : `${name} wins!`;
+    $("winnerBack").classList.add("show");
+    launchConfetti();
+    $("anotherGame").classList.remove("hidden");
+  }
+  if(!gameWinner){
+    render._shownWinner = false;
+    $("anotherGame").classList.add("hidden");
+  }
+}
+
+/* ==========================
+   Create / Join room
+   ========================== */
+async function createOrJoin({mode, nickname, roomCodeValue}){
+  const room = (roomCodeValue || "").trim().toUpperCase();
+  if(!room) return alert("Room code missing.");
+
+  const roomRef = db.ref(`rooms/${room}`);
+  const snap = await roomRef.get();
+
+  if(mode === "create"){
+    if(snap.exists()) return alert("Room already exists. Try a new code.");
+
+    const pid = "p" + Date.now();
+    my = { pid, name: (nickname || "").trim() || "Player 1", room };
+
+    await roomRef.set({
+      createdAt: now(),
+      stage: "lobby",
+      order: [pid],
+      players: { [pid]: { name: my.name, color: pastel(0), mark: "X" } },
+      undos: { [pid]: 3 },
+      boards: emptyBoard(),
+      subWinners: Array(9).fill(""),
+      activeBoard: -1,     // first move: any board
+      turnPid: pid,        // X starts
+      gameWinner: "",
+      history: []
+    });
+
+  } else {
+    if(!snap.exists()) return alert("Room not found.");
+
+    const data = snap.val();
+    const order = data.order || [];
+    if(order.length >= 2) return alert("Room already has 2 players.");
+
+    const pid = "p" + Date.now();
+    my = { pid, name: (nickname || "").trim() || "Player 2", room };
+
+    const updates = {};
+    updates[`rooms/${room}/order`] = [...order, pid];
+    updates[`rooms/${room}/players/${pid}`] = { name: my.name, color: pastel(1), mark: "O" };
+    updates[`rooms/${room}/undos/${pid}`] = 3;
+    updates[`rooms/${room}/stage`] = "game"; // auto start when 2 players join
+
+    await db.ref().update(updates);
+  }
+
+  $("roomTop").textContent = my.room;
+  attachRoomListeners();
+  goto("step-lobby");
+}
+
+$("createGo").onclick = () => createOrJoin({
+  mode:"create",
+  nickname:$("createName").value,
+  roomCodeValue:$("createCode").value
+});
+
+$("joinGo").onclick = () => createOrJoin({
+  mode:"join",
+  nickname:$("joinName").value,
+  roomCodeValue:$("joinCode").value
+});
+
+$("goGameBtn").onclick = () => goto("step-game");
+
+/* Winner modal next / Another game */
+$("winnerNext").onclick = async () => {
+  $("winnerBack").classList.remove("show");
+  await resetGame();
+};
+$("anotherGame").onclick = async () => await resetGame();
+
+/* ==========================
+   Realtime listener
+   ========================== */
+function attachRoomListeners(){
+  detach();
+  const base = `rooms/${my.room}`;
+
+  onValue(base, (snap) => {
+    const v = snap.val();
+    if(!v) return;
+    roomState = v;
+    render();
+  });
+}
+
+/* ==========================
+   Moves (transaction)
+   ========================== */
+async function tryMove(boardIdx, cellIdx){
+  if(!roomState) return;
+  if(roomState.gameWinner) return;
+
+  const roomRef = db.ref(`rooms/${my.room}`);
+
+  await roomRef.transaction(cur => {
+    if(!cur) return cur;
+
+    // need both players
+    const order = cur.order || [];
+    if(order.length < 2) return;
+
+    // validate turn
+    if(cur.turnPid !== my.pid) return;
+    if(cur.gameWinner) return;
+
+    const players = cur.players || {};
+    const me = players[my.pid];
+    if(!me) return;
+
+    const mark = me.mark; // X or O
+    const boards = cur.boards || emptyBoard();
+    const subW = cur.subWinners || Array(9).fill("");
+    const active = (cur.activeBoard ?? -1);
+
+    // allowed boards
+    const allowed = allowedBoards(active, subW);
+    if(subW[boardIdx] !== "") return;          // board already closed
+    if(!allowed.includes(boardIdx)) return;    // not allowed board
+    if(boards[boardIdx][cellIdx]) return;      // occupied
+
+    // Save prev for undo
+    const prevState = {
+      by: my.pid,
+      mark,
+      board: boardIdx,
+      cell: cellIdx,
+      prevActiveBoard: active,
+      prevTurnPid: cur.turnPid,
+      prevSubWinner: subW[boardIdx],
+      prevGameWinner: cur.gameWinner || "",
+      ts: now()
+    };
+
+    // apply move
+    boards[boardIdx][cellIdx] = mark;
+
+    // compute sub winner
+    subW[boardIdx] = computeWinner3(boards[boardIdx]);
+
+    // compute big winner
+    cur.gameWinner = computeBigWinner(subW);
+
+    // set next active board = cellIdx (unless closed then free)
+    let nextActive = cellIdx;
+    if(subW[nextActive] !== "") nextActive = -1;
+    cur.activeBoard = nextActive;
+
+    // swap turn
+    const oppPid = order.find(p => p !== my.pid) || null;
+    if(!oppPid) return;
+    cur.turnPid = oppPid;
+
+    // commit
+    cur.boards = boards;
+    cur.subWinners = subW;
+
+    // history (for undo)
+    const hist = Array.isArray(cur.history) ? cur.history : [];
+    hist.push(prevState);
+    if(hist.length > 300) hist.shift();
+    cur.history = hist;
+
+    return cur;
+  });
+}
+
+/* ==========================
+   Undo (3 per player)
+   - Undo reverts the most recent move, and consumes 1 undo from the player clicking.
+   - Allowed only on your turn (keeps it simple + avoids race conditions).
+   ========================== */
+$("undoBtn").onclick = async () => {
+  if(!roomState) return;
+
+  const roomRef = db.ref(`rooms/${my.room}`);
+  await roomRef.transaction(cur => {
+    if(!cur) return cur;
+
+    // only on your turn (simple / safe)
+    if(cur.turnPid !== my.pid) return;
+
+    const undos = cur.undos || {};
+    const left = undos[my.pid] ?? 3;
+    if(left <= 0) return;
+
+    const hist = Array.isArray(cur.history) ? cur.history : [];
+    if(hist.length === 0) return;
+
+    const last = hist[hist.length - 1];
+    if(!last) return;
+
+    const boards = cur.boards || emptyBoard();
+    const subW = cur.subWinners || Array(9).fill("");
+
+    // revert last move cell
+    if(boards[last.board]) boards[last.board][last.cell] = "";
+
+    // restore sub winner for that board + game winner + active + turn
+    subW[last.board] = last.prevSubWinner || "";
+    cur.gameWinner = last.prevGameWinner || "";
+    cur.activeBoard = (last.prevActiveBoard ?? -1);
+    cur.turnPid = (last.prevTurnPid ?? my.pid);
+
+    // pop history
+    hist.pop();
+    cur.history = hist;
+
+    // consume undo
+    undos[my.pid] = left - 1;
+    cur.undos = undos;
+
+    cur.boards = boards;
+    cur.subWinners = subW;
+
+    return cur;
+  });
+};
+
+/* ==========================
+   Reset game (Another game)
+   ========================== */
+async function resetGame(){
+  const roomRef = db.ref(`rooms/${my.room}`);
+  await roomRef.transaction(cur => {
+    if(!cur) return cur;
+    const order = cur.order || [];
+    if(order.length !== 2) return cur;
+
+    cur.stage = "lobby";
+    cur.boards = emptyBoard();
+    cur.subWinners = Array(9).fill("");
+    cur.activeBoard = -1;
+    cur.gameWinner = "";
+    cur.history = [];
+    // X (first in order) starts again
+    cur.turnPid = order[0];
+    // reset undos
+    cur.undos = { [order[0]]: 3, [order[1]]: 3 };
+    return cur;
+  });
+
+  $("winnerBack").classList.remove("show");
+  goto("step-lobby");
+}
+
+/* ==========================
+   UI: step buttons + rules close
+   ========================== */
+$("closeRules").onclick = () => $("rulesBack").classList.remove("show");
+$("winnerClose").onclick = () => $("winnerBack").classList.remove("show");
+
+/* Create/join prefill */
+$("btnCreate").onclick = () => { goto("step-create"); $("createCode").value = roomCode(); };
+$("btnJoin").onclick   = () => goto("step-join");
+
+/* Back buttons */
+$("back1").onclick = () => goto("step-choose");
+$("back2").onclick = () => goto("step-choose");
+</script>
+</body>
+</html>
