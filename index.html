@@ -165,7 +165,10 @@
     padding:10px;
     position:relative;
     overflow:hidden;
-    min-height:160px;
+    min-height: 0;              /* remove tall stretching */
+  aspect-ratio: 1 / 1;        /* force square board */
+  display: flex;
+  flex-direction: column;
     background:rgba(255,255,255,.08);
   }
   [data-mode="dark"] .sub{ background:rgba(255,255,255,.04); }
@@ -204,6 +207,7 @@
     display:grid;
     grid-template-columns:repeat(3,1fr);
     gap:var(--cellGap);
+    height: 100%; 
   }
   .cell{
     aspect-ratio: 1 / 1;
@@ -213,6 +217,7 @@
     display:flex;align-items:center;justify-content:center;
     font-size:30px;font-weight:1000;
     user-select:none;
+    width: 100%;
     transition: transform .06s ease, filter .12s ease;
   }
   [data-mode="dark"] .cell{background:rgba(255,255,255,.04);}
@@ -270,6 +275,21 @@
   .confetti{position:fixed; inset:0; pointer-events:none; z-index:9998; overflow:hidden;}
   .confetti i{position:absolute; top:-20px; width:10px; height:14px; border-radius:3px; opacity:.95; animation:confFall linear forwards;}
   @keyframes confFall{to{transform: translateY(110vh) rotate(720deg); opacity: 1;}}
+  @media (max-width: 520px){
+  .uttt{
+    gap: 8px;
+    padding: 10px;
+  }
+  .sub{
+    padding: 8px;
+    border-radius: 14px;
+  }
+  .cell{
+    border-radius: 12px;
+    font-size: 26px;
+  }
+}
+
 </style>
 </head>
 <body>
