@@ -64,7 +64,11 @@
     background:var(--btnGrad);
     -webkit-background-clip:text;background-clip:text;color:transparent;
   }
-
+.undoPill,
+#undoBtn,
+#undoCount {
+  display: none !important;
+}
   .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
   .pill{display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line2);border-radius:999px;padding:6px 12px;background:transparent}
   .mini{font-size:12px;color:var(--muted)}
@@ -181,7 +185,7 @@
     outline:3px solid rgba(37,99,235,.60);
     box-shadow:0 0 0 6px rgba(37,99,235,.12);
   }
-  .sub.blocked{opacity:.40;filter:saturate(.85);}
+  .sub.blocked{opacity:.70;filter:saturate(.95);}
 
   .subWinner{
     position:absolute; inset:0;
@@ -216,7 +220,13 @@
   .cell:active{transform:translateY(1px)}
   .cell.x{color:var(--x)}
   .cell.o{color:var(--o)}
-  .cell.disabled{pointer-events:none;opacity:.55}
+.cell.disabled{opacity:.82}
+
+  .sub.blocked{
+  opacity:.72;
+  filter:saturate(.95);
+  outline:2px dashed rgba(148,163,184,.45);
+}
 
   /* Sidebar */
   .sideRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
@@ -757,10 +767,7 @@ function render(){
   const allowed = allowedBoards(active, subW);
 
   const myTurn = (roomState.turnPid === my.pid) && !gameWinner;
-  $("undoBtn").disabled =
-    !myTurn ||
-    (roomState.history || []).length === 0 ||
-    ((roomState.undos?.[my.pid] ?? 3) <= 0);
+  
 
   document.querySelectorAll(".sub").forEach(el => {
     const bi = parseInt(el.dataset.b,10);
@@ -956,8 +963,13 @@ async function tryMove(boardIdx, cellIdx){
     // compute sub winner
     subW[boardIdx] = computeWinner3(boards[boardIdx]);
 
-    // compute big winner
-    cur.gameWinner = computeBigWinner(subW);
+    // END GAME rule: if ANY small board is won (X or O), game ends immediately
+// (ignore Draw boards)
+let earlyWinner = "";
+for (const w of subW) {
+  if (w === "X" || w === "O") { earlyWinner = w; break; }
+}
+cur.gameWinner = earlyWinner || "";  // end if someone won any board
 
     // set next active board = cellIdx (unless closed then free)
     let nextActive = cellIdx;
@@ -988,52 +1000,8 @@ async function tryMove(boardIdx, cellIdx){
    - Undo reverts the most recent move, and consumes 1 undo from the player clicking.
    - Allowed only on your turn (keeps it simple + avoids race conditions).
    ========================== */
-$("undoBtn").onclick = async () => {
-  if(!roomState) return;
+$("undoBtn").onclick = () => {};
 
-  const roomRef = db.ref(`rooms/${my.room}`);
-  await roomRef.transaction(cur => {
-    if(!cur) return cur;
-
-    // only on your turn (simple / safe)
-    if(cur.turnPid !== my.pid) return;
-
-    const undos = cur.undos || {};
-    const left = undos[my.pid] ?? 3;
-    if(left <= 0) return;
-
-    const hist = Array.isArray(cur.history) ? cur.history : [];
-    if(hist.length === 0) return;
-
-    const last = hist[hist.length - 1];
-    if(!last) return;
-
-    const boards = cur.boards || emptyBoard();
-    const subW = cur.subWinners || Array(9).fill("");
-
-    // revert last move cell
-    if(boards[last.board]) boards[last.board][last.cell] = "";
-
-    // restore sub winner for that board + game winner + active + turn
-    subW[last.board] = last.prevSubWinner || "";
-    cur.gameWinner = last.prevGameWinner || "";
-    cur.activeBoard = (last.prevActiveBoard ?? -1);
-    cur.turnPid = (last.prevTurnPid ?? my.pid);
-
-    // pop history
-    hist.pop();
-    cur.history = hist;
-
-    // consume undo
-    undos[my.pid] = left - 1;
-    cur.undos = undos;
-
-    cur.boards = boards;
-    cur.subWinners = subW;
-
-    return cur;
-  });
-};
 
 /* ==========================
    Reset game (Another game)
