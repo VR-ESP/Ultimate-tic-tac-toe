@@ -289,6 +289,38 @@
     font-size: 26px;
   }
 }
+  /* Fix Ultimate Tic Tac Toe layout on mobile */
+@media (max-width: 520px){
+
+  /* Force each small board to be a square */
+  .sub{
+    min-height: 0 !important;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Make the 3x3 grid fill the square */
+  .cells{
+    height: 100%;
+  }
+
+  /* Make each cell fill its grid slot */
+  .cell{
+    width: 100%;
+  }
+
+  /* Reduce padding so grid fits nicely */
+  .uttt{
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .sub{
+    padding: 8px;
+  }
+}
+
 
 </style>
 </head>
